@@ -1,0 +1,9 @@
+node_modules
+public
+.deploy_git
+*.log
+.git
+.gitignore
+README.md
+.DS_Store
+Thumbs.db
