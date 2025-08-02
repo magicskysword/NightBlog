@@ -3,11 +3,16 @@ name: Build and Release Blog + Deployer
 on:
   push:
     tags:
-      - 'blog-*'
+      - 'blog-*'               # blog 构建依赖 tag 推送
+    paths:
+      - 'deployer/**'          # 只有这个路径变化才触发 build-deployer
+      - 'blog/**'              # blog 目录必须存在，防止 Actions 不拉取它
+      - '.github/workflows/**' # 改动 workflow 文件也要触发
 
 jobs:
   build-blog:
     name: Build and Release Blog
+    if: startsWith(github.ref, 'refs/tags/blog-')  # 只在 blog-* tag 被推送时执行
     runs-on: ubuntu-latest
 
     steps:
@@ -51,6 +56,8 @@ jobs:
   build-deployer:
     name: Build and Push Deployer Image
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref_type != 'tag' # 避免 tag 推送触发
+
     defaults:
       run:
         working-directory: deployer
@@ -59,7 +66,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Detect deployer directory change
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            deployer:
+              - 'deployer/**'
+
       - name: Log in to GitHub Container Registry
+        if: steps.changes.outputs.deployer == 'true'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -67,6 +83,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push image
+        if: steps.changes.outputs.deployer == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./deployer
