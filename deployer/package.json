@@ -11,6 +11,7 @@
   "dependencies": {
     "dotenv": "^16.4.1",
     "express": "^4.19.2",
+    "follow-redirects": "^1.15.11",
     "unzipper": "^0.10.11"
   }
 }

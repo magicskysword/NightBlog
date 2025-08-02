@@ -1,4 +1,4 @@
-const https = require('https');
+const { https } = require('follow-redirects');
 const fs = require('fs');
 const unzipper = require('unzipper');
 const path = require('path');
