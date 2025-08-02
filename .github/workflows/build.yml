@@ -1,17 +1,15 @@
 name: Build and Release Blog + Deployer
 
 on:
-   # 1. 普通 push（用于监控 deployer 修改）
-  push:
-    paths:
-      - 'deployer/**'
-      - '.github/workflows/**'
-
-  # 2. blog 构建：只有 tag 推送时才触发
   push:
     tags:
-      - 'blog-*'
-
+      - 'blog-*'         # 推送 tag 触发 blog 构建
+    branches:
+      - 'main'
+    paths:
+      - 'blog/**'        # 允许拉取 blog 内容
+      - 'deployer/**'    # 允许监听 deployer 改动
+      - '.github/workflows/**'
 
 jobs:
   build-blog:
