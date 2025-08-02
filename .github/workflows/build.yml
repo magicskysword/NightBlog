@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 保证 release tag 信息能获取到
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -29,11 +29,14 @@ jobs:
         run: |
           docker build -t hexo-builder -f blog/Dockerfile ./blog
 
-      - name: Run Hexo build container and extract public
+      - name: Run Hexo Build Container and Extract /public
         run: |
-          docker create --name temp-builder hexo-builder
-          docker cp temp-builder:/app/public ./blog-public
-          docker rm temp-builder
+          docker create --name temp-hexo hexo-builder
+          docker cp temp-hexo:/app/public ./blog-public
+          docker rm temp-hexo
+
+      - name: Check public folder content
+        run: ls -lah ./blog-public
 
       - name: Zip generated blog
         run: |
@@ -52,7 +55,6 @@ jobs:
         run: |
           curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}?token=${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
           || echo "⚠️ Webhook failed, continuing anyway."
-
 
   build-deployer:
     name: Build and Push Deployer Image
