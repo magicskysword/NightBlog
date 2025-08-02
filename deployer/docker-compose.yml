@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  deployer:
+    build: .
+    container_name: blog-deployer
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./public:/app/public  # 静态网站部署目录（可选）
+    restart: unless-stopped
