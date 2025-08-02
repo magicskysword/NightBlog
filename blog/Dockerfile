@@ -15,7 +15,7 @@ RUN pnpm install
 # 复制所有源代码
 COPY . .
 
-# 单独为 NexT 主题安装依赖（防止部分脚本 require 报错）
+# 单独为 NexT 主题安装依赖
 RUN if [ -f themes/next/package.json ]; then \
       cd themes/next && pnpm install || true; \
     fi

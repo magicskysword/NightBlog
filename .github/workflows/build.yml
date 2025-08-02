@@ -17,7 +17,7 @@ jobs:
   build-blog:
     name: Build and Release Blog
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/blog-')
+    if: startsWith(github.ref, 'refs/tags/blog-')  # 只在 blog-* tag 推送时触发
 
     steps:
       - name: Checkout code
@@ -28,22 +28,31 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install dependencies
         working-directory: blog
         run: |
-          corepack enable
           pnpm install
+          if [ -f themes/next/package.json ]; then
+            cd themes/next
+            pnpm install || true
+          fi
 
-      - name: Generate static blog
+      - name: Build static site
         working-directory: blog
         run: pnpm run build
 
-      - name: Zip generated blog
+      - name: Check built files
+        run: ls -R blog/public
+
+      - name: Zip built blog
         run: |
           cd blog/public
-          zip -r ../../blog-release.zip .
+          zip -r ../../../blog-release.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
