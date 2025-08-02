@@ -33,7 +33,7 @@ app.post('/api/update', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log('Performing initial deployment...');
   try {
