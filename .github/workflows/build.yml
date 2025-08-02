@@ -2,8 +2,8 @@ name: Build and Release Blog + Deployer
 
 on:
   push:
-    branches:
-      - main  # 或你的默认分支
+    tags:
+      - 'blog-*'
 
 jobs:
   build-blog:
