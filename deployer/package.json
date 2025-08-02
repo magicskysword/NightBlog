@@ -1,0 +1,16 @@
+{
+  "name": "blog-deployer",
+  "version": "1.0.0",
+  "description": "Webhook-based blog deployer for GitHub Actions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "your-name",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.1",
+    "express": "^4.19.2",
+    "unzipper": "^0.10.11"
+  }
+}

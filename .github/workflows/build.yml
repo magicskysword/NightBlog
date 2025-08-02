@@ -9,9 +9,6 @@ jobs:
   build-blog:
     name: Build and Release Blog
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: blog
 
     steps:
       - name: Checkout code
@@ -23,28 +20,32 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
+        working-directory: blog
         run: |
           corepack enable
           pnpm install
 
       - name: Generate static blog
+        working-directory: blog
         run: pnpm run build
 
       - name: Zip generated blog
         run: |
-          cd public
-          zip -r ../blog-release.zip .
+          cd blog/public
+          zip -r ../../blog-release.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_name }}
           files: blog-release.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger Remote Deploy via Webhook
         run: |
-          curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}?token=${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" || true
+          curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}?token=${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
+          || echo "⚠️ Webhook failed, continuing anyway."
 
 
   build-deployer:
