@@ -14,32 +14,31 @@ on:
 jobs:
   build-blog:
     name: Build and Release Blog
-    if: startsWith(github.ref, 'refs/tags/blog-')  # 只在 blog-* tag 被推送时执行
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
         with:
-          node-version: 18
+          fetch-depth: 0
 
-      - name: Install dependencies
-        working-directory: blog
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Hexo Docker Image
         run: |
-          corepack enable
-          pnpm install
+          docker build -t hexo-builder -f blog/Dockerfile ./blog
 
-      - name: Generate static blog
-        working-directory: blog
-        run: pnpm run build
+      - name: Run Hexo build container and extract public
+        run: |
+          docker create --name temp-builder hexo-builder
+          docker cp temp-builder:/app/public ./blog-public
+          docker rm temp-builder
 
       - name: Zip generated blog
         run: |
-          cd blog/public
-          zip -r ../../blog-release.zip .
+          cd blog-public
+          zip -r ../blog-release.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
