@@ -9,6 +9,7 @@
   "author": "your-name",
   "license": "MIT",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "dotenv": "^16.4.1",
     "express": "^4.19.2",
     "follow-redirects": "^1.15.11",
