@@ -41,3 +41,6 @@ public/
 # Docker 相关（如果你构建了镜像）
 *.tar
 docker-compose.override.yml
+
+# 测试推送
+test_trigger.sh
