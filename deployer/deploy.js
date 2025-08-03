@@ -1,4 +1,4 @@
-const { https } = require('follow-redirects');
+const { http, https } = require('follow-redirects');
 const fs = require('fs');
 const unzipper = require('unzipper');
 const path = require('path');
@@ -8,16 +8,24 @@ async function downloadAndExtract(url, targetDir) {
   const tmpZip = path.join('/tmp', 'blog.zip');
 
   // Download zip
+  if (!url) {
+    throw new Error('URL is required');
+  }
   console.log(`Downloading ${url}...`);
   await new Promise((resolve, reject) => {
     const file = fs.createWriteStream(tmpZip);
-    https.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        return reject(new Error(`Failed to download: ${response.statusCode}`));
-      }
-      response.pipe(file);
-      file.on('finish', () => file.close(resolve));
-    }).on('error', reject);
+    const client = url.startsWith('https') ? https : http;
+    client
+      .get(url, (response) => {
+        if (response.statusCode !== 200) {
+          return reject(
+            new Error(`Failed to download: ${response.statusCode}`)
+          );
+        }
+        response.pipe(file);
+        file.on('finish', () => file.close(resolve));
+      })
+      .on('error', reject);
   });
 
   // Clean target directory
