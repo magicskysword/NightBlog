@@ -9,10 +9,10 @@ on:
       - 'deployer/**'
       - '.github/workflows/**'
 
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:
 
 permissions:
-  contents: write  # ✅ 允许推送 tag 和创建 release
+  contents: write  # 必需：用于推送 tag 和创建 release
 
 jobs:
   build-blog:
@@ -23,22 +23,38 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # ✅ 需要完整历史以便更新 tag
+          fetch-depth: 0
+
+      - name: Detect blog directory change
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            blog:
+              - 'blog/**'
+
+      - name: Exit if no blog changes
+        if: steps.changes.outputs.blog != 'true'
+        run: echo "No changes in blog/, skipping build."
 
       - name: Set up Git identity
+        if: steps.changes.outputs.blog == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Set up Node.js
+        if: steps.changes.outputs.blog == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 22
 
       - name: Install pnpm
+        if: steps.changes.outputs.blog == 'true'
         run: npm install -g pnpm
 
       - name: Install dependencies
+        if: steps.changes.outputs.blog == 'true'
         working-directory: blog
         run: |
           pnpm install
@@ -48,33 +64,37 @@ jobs:
           fi
 
       - name: Build static site
+        if: steps.changes.outputs.blog == 'true'
         working-directory: blog
         run: pnpm run build
 
       - name: Check built files
+        if: steps.changes.outputs.blog == 'true'
         run: ls -R blog/public
 
       - name: Zip built blog
+        if: steps.changes.outputs.blog == 'true'
         working-directory: blog/public
         run: zip -r $GITHUB_WORKSPACE/blog-release.zip .
 
       - name: Force-update blog-main tag
+        if: steps.changes.outputs.blog == 'true'
         run: |
           git tag -f blog-main
           git push origin blog-main --force
 
       - name: Create or Update GitHub Release
+        if: steps.changes.outputs.blog == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: blog-main
           name: Blog Release (main)
           files: blog-release.zip
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger Remote Deploy via Webhook
+        if: steps.changes.outputs.blog == 'true'
         run: |
           curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}?token=${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
           || echo "⚠️ Webhook failed, continuing anyway."
