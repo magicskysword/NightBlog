@@ -12,7 +12,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # 必需：用于推送 tag 和创建 release
+  contents: write
+  packages: write
 
 jobs:
   build-blog:
@@ -102,7 +103,6 @@ jobs:
   build-deployer:
     name: Build and Push Deployer Image
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref_type != 'tag'
 
     steps:
       - name: Checkout code
