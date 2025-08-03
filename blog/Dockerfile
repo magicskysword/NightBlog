@@ -12,8 +12,11 @@ COPY package.json pnpm-lock.yaml ./
 # 安装主项目依赖（包含 hexo、主题依赖声明）
 RUN pnpm install
 
-# 复制所有源代码
-COPY . .
+# 复制其他所需源文件
+COPY _config.yml ./
+COPY themes ./themes
+COPY source ./source
+COPY scaffolds ./scaffolds
 
 # 单独为 NexT 主题安装依赖
 RUN if [ -f themes/next/package.json ]; then \

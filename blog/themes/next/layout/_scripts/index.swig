@@ -5,6 +5,8 @@
   {{- next_js('motion.js') }}
 {%- endif %}
 
+{{- next_js('custom.js') }}
+
 {%- set scheme_script = 'schemes/' + theme.scheme | lower + '.swig' %}
 {% include scheme_script %}
 
