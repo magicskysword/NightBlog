@@ -2,14 +2,18 @@ name: Build and Release Blog + Deployer
 
 on:
   push:
-    tags:
-      - 'blog-*'         # 推送 tag 触发 blog 构建
     branches:
-      - 'main'
+      - main
     paths:
-      - 'blog/**'        # 允许拉取 blog 内容
-      - 'deployer/**'    # 允许监听 deployer 改动
+      - 'blog/**'
+      - 'deployer/**'
       - '.github/workflows/**'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build-blog:
@@ -22,46 +26,83 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Detect blog directory change
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            blog:
+              - 'blog/**'
 
-      - name: Build Hexo Docker Image
+      - name: Exit if no blog changes
+        if: steps.changes.outputs.blog != 'true'
+        run: echo "No changes in blog/, skipping build."
+
+      - name: Set up Git identity
+        if: steps.changes.outputs.blog == 'true'
         run: |
-          docker build -t hexo-builder -f blog/Dockerfile ./blog
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Run Hexo build container and extract public
+      - name: Set up Node.js
+        if: steps.changes.outputs.blog == 'true'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        if: steps.changes.outputs.blog == 'true'
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        if: steps.changes.outputs.blog == 'true'
+        working-directory: blog
         run: |
-          docker create --name temp-builder hexo-builder
-          docker cp temp-builder:/app/public ./blog-public
-          docker rm temp-builder
+          pnpm install
+          if [ -f themes/next/package.json ]; then
+            cd themes/next
+            pnpm install || true
+          fi
 
-      - name: Zip generated blog
+      - name: Build static site
+        if: steps.changes.outputs.blog == 'true'
+        working-directory: blog
+        run: pnpm run build
+
+      - name: Check built files
+        if: steps.changes.outputs.blog == 'true'
+        run: ls -R blog/public
+
+      - name: Zip built blog
+        if: steps.changes.outputs.blog == 'true'
+        working-directory: blog/public
+        run: zip -r $GITHUB_WORKSPACE/blog-release.zip .
+
+      - name: Force-update blog-main tag
+        if: steps.changes.outputs.blog == 'true'
         run: |
-          cd blog-public
-          zip -r ../blog-release.zip .
+          git tag -f blog-main
+          git push origin blog-main --force
 
-      - name: Create GitHub Release
+      - name: Create or Update GitHub Release
+        if: steps.changes.outputs.blog == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: blog-main
+          name: Blog Release (main)
           files: blog-release.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger Remote Deploy via Webhook
+        if: steps.changes.outputs.blog == 'true'
         run: |
           curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}?token=${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
           || echo "⚠️ Webhook failed, continuing anyway."
 
-
   build-deployer:
     name: Build and Push Deployer Image
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref_type != 'tag' # 避免 tag 推送触发
-
-    defaults:
-      run:
-        working-directory: deployer
 
     steps:
       - name: Checkout code
